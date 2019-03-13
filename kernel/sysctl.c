@@ -641,6 +641,13 @@ static struct ctl_table kern_table[] = {
 		.extra2		= &one_hundred,
 	},
 #endif
+	{
+		.procname	= "sched_lib_name",
+		.data		= sched_lib_name,
+		.maxlen		= LIB_PATH_LENGTH,
+		.mode		= 0644,
+		.proc_handler	= proc_dostring,
+	},
 #ifdef CONFIG_PROVE_LOCKING
 	{
 		.procname	= "prove_locking",
