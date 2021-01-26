@@ -3332,13 +3332,13 @@ done:
 
 	fg_dbg(chip, FG_STATUS, "profile loaded successfully");
 out:
-	fg->soc_reporting_ready = true;
-	vote(fg->awake_votable, ESR_FCC_VOTER, true, 0);
+	chip->soc_reporting_ready = true;
+	vote(chip->awake_votable, ESR_FCC_VOTER, true, 0);
 	queue_delayed_work(system_power_efficient_wq, &chip->pl_enable_work, msecs_to_jiffies(5000));
-	vote(fg->awake_votable, PROFILE_LOAD, false, 0);
-	if (!work_pending(&fg->status_change_work)) {
-		fg_stay_awake(fg, FG_STATUS_NOTIFY_WAKE);
-		schedule_work(&fg->status_change_work);
+	vote(chip->awake_votable, PROFILE_LOAD, false, 0);
+	if (!work_pending(&chip->status_change_work)) {
+		fg_stay_awake(chip, FG_STATUS_NOTIFY_WAKE);
+		schedule_work(&chip->status_change_work);
 	}
 }
 
@@ -3367,7 +3367,7 @@ static void sram_dump_work(struct work_struct *work)
 	fg_dbg(chip, FG_STATUS, "SRAM Dump done at %lld.%d\n",
 		quotient, remainder);
 resched:
-	queue_delayed_work(system_power_efficient_wq, &fg->sram_dump_work,
+	queue_delayed_work(system_power_efficient_wq, &chip->sram_dump_work,
 			msecs_to_jiffies(fg_sram_dump_period_ms));
 }
 
@@ -3395,7 +3395,7 @@ static int fg_sram_dump_sysfs(const char *val, const struct kernel_param *kp)
 
 	chip = power_supply_get_drvdata(bms_psy);
 	if (fg_sram_dump)
-		queue_delayed_work(system_power_efficient_wq, &fg->sram_dump_work,
+		queue_delayed_work(system_power_efficient_wq, &chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 	else
 		cancel_delayed_work_sync(&chip->sram_dump_work);
@@ -4800,8 +4800,8 @@ static irqreturn_t fg_batt_missing_irq_handler(int irq, void *data)
 		return IRQ_HANDLED;
 	}
 
-	clear_battery_profile(fg);
-	queue_delayed_work(system_power_efficient_wq, &fg->profile_load_work, 0);
+	clear_battery_profile(chip);
+	queue_delayed_work(system_power_efficient_wq, &chip->profile_load_work, 0);
 
 	if (chip->fg_psy)
 		power_supply_changed(chip->fg_psy);
@@ -5918,8 +5918,17 @@ static int fg_gen3_probe(struct platform_device *pdev)
 			pr_err("Error in configuring ESR filter rc:%d\n", rc);
 	}
 
-	device_init_wakeup(fg->dev, true);
-	queue_delayed_work(system_power_efficient_wq, &fg->profile_load_work, 0);
+	chip->tz_dev = thermal_zone_of_sensor_register(chip->dev, 0, chip,
+							&fg_gen3_tz_ops);
+	if (IS_ERR_OR_NULL(chip->tz_dev)) {
+		rc = PTR_ERR(chip->tz_dev);
+		chip->tz_dev = NULL;
+		dev_err(chip->dev, "thermal_zone_of_sensor_register() failed rc:%d\n",
+			rc);
+	}
+
+	device_init_wakeup(chip->dev, true);
+	queue_delayed_work(system_power_efficient_wq, &chip->profile_load_work, 0);
 
 	pr_debug("FG GEN3 driver probed successfully\n");
 	return 0;
@@ -5958,12 +5967,12 @@ static int fg_gen3_resume(struct device *dev)
 
 	queue_delayed_work(system_power_efficient_wq, &chip->ttf_work, 0);
 	if (fg_sram_dump)
-		queue_delayed_work(system_power_efficient_wq, &fg->sram_dump_work,
+		queue_delayed_work(system_power_efficient_wq, &chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 
 	if (!work_pending(&chip->status_change_work)) {
 		pm_stay_awake(chip->dev);
-		schedule_work(&chip->status_change_work);
+		queue_delayed_work(system_power_efficient_wq, &chip->status_change_work);
 	}
 
 	spin_lock(&chip->suspend_lock);
