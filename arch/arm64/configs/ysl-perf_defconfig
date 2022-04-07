@@ -3771,7 +3771,6 @@ CONFIG_STAGING=y
 #
 CONFIG_ASHMEM=y
 # CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
-# CONFIG_ANDROID_LMK_NOTIFY_TRIGGER is not set
 CONFIG_ION=y
 # CONFIG_ION_TEST is not set
 # CONFIG_ION_DUMMY is not set
@@ -3791,6 +3790,7 @@ CONFIG_ION_MSM=y
 
 # Process Reclaim Based Low Memory Killer
 CONFIG_PRLMK=y
+CONFIG_ANDROID_PR_KILL=y
 
 #
 # Qualcomm Atheros Prima WLAN module
