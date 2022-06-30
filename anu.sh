@@ -26,8 +26,8 @@ ALAT=clang
 
 	if [ $ALAT = "gcc" ]
 	then
-		git clone --depth=1 -b gcc-master https://github.com/mvaisakh/gcc-arm64.git gcc
-		git clone --depth=1 -b gcc-master https://github.com/mvaisakh/gcc-arm.git gcc32
+		git clone --depth=1 -b sc-v13.x https://github.com/OhMyVenyx/aarch64-elf-gcc.git gcc
+		git clone --depth=1 -b sc-v13.x https://github.com/OhMyVenyx/arm-eabi-gcc.git gcc32
 	fi
 
 LOKASI_PEMBANGUNAN_KERNEL=$(pwd)
